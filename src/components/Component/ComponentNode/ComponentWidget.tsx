@@ -120,6 +120,31 @@ export function ComponentWidget(props: ComponentWidgetProps) {
         event.stopPropagation();
     };
 
+    const deps = node.component.dependencies;
+    const hasDeps = !previewMode && deps && (deps.out.length > 0 || deps.in.length > 0);
+    const eyebrow: React.CSSProperties = { opacity: 0.55, fontSize: 9, textTransform: "uppercase", letterSpacing: "0.07em", marginTop: 5 };
+    const depCard = (
+        <div style={{ fontSize: 11.5, lineHeight: 1.5 }}>
+            <div style={{ fontWeight: 700 }}>{displayName}</div>
+            {deps && deps.out.length > 0 && (
+                <>
+                    <div style={eyebrow}>depends on</div>
+                    {deps.out.map((d, i) => (
+                        <div key={`o${i}`}>{d.label}</div>
+                    ))}
+                </>
+            )}
+            {deps && deps.in.length > 0 && (
+                <>
+                    <div style={eyebrow}>used by</div>
+                    {deps.in.map((s, i) => (
+                        <div key={`i${i}`}>{s}</div>
+                    ))}
+                </>
+            )}
+        </div>
+    );
+
     return (
         <ComponentNode
             previewMode={previewMode}
@@ -128,14 +153,18 @@ export function ComponentWidget(props: ComponentWidgetProps) {
             onDoubleClick={handleOnWidgetDoubleClick}
             onContextMenu={handleOnContextMenu}
         >
-            <ComponentHeadWidget
-                engine={engine}
-                node={node}
-                isSelected={node.getID() === selectedNodeId || node.isNodeSelected(selectedLink, node.getID())}
-                isFocused={node.getID() === focusedNodeId || isHovered}
-                menuItems={componentMenu}
-                onFocusOut={handleMouseLeave}
-            />
+            <Tooltip title={hasDeps ? depCard : ""} placement="right" arrow enterDelay={150} enterNextDelay={150}>
+                <span>
+                    <ComponentHeadWidget
+                        engine={engine}
+                        node={node}
+                        isSelected={node.getID() === selectedNodeId || node.isNodeSelected(selectedLink, node.getID())}
+                        isFocused={node.getID() === focusedNodeId || isHovered}
+                        menuItems={componentMenu}
+                        onFocusOut={handleMouseLeave}
+                    />
+                </span>
+            </Tooltip>
             <Tooltip title={displayName} placement="bottom" enterNextDelay={500} arrow>
                 {!previewMode ? <ComponentName disabled={isDisabled}>{displayName}</ComponentName> : <></>}
             </Tooltip>

@@ -69,6 +69,14 @@ export const ConnectionName = styled.span<StyleProps>`
     max-width: ${(props: StyleProps) => (props.orientation === Orientation.VERTICAL ? LABEL_MAX_WIDTH : "unset")};
 `;
 
+// Cross-cell egress: all egress edges converge and end in their arrowhead at this point.
+// No visible dot — the node is just an anchor for the ports (hover a component for its deps).
+export const EgressDot = styled.div`
+    position: relative;
+    width: 0;
+    height: 0;
+`;
+
 interface IconWrapperStyleProps {
     previewMode: boolean;
     isSelected?: boolean;

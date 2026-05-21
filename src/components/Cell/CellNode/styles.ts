@@ -101,6 +101,7 @@ export const LeftPortCircle: React.FC<any> = styled(Circle)`
     left: -${CIRCLE_WIDTH / 2}px;
 `;
 
+
 export const RightPortCircle: React.FC<any> = styled(Dot)`
     position: absolute;
     top: 50% - ${DOT_WIDTH / 2 + CELL_LINE_MIN_WIDTH}px;

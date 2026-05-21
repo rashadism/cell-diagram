@@ -64,6 +64,16 @@ export type ExternalConsumerLinkSelectEvent = BaseEvent & {
     cellBound: CellBounds;
 };
 
+export interface ComponentDependency {
+    label: string; // "component" (same project) or "project/component" (cross-project)
+    kind: "calls" | "uses" | "external";
+}
+
+export interface ComponentDependencies {
+    out: ComponentDependency[]; // what this component depends on
+    in: string[]; // "project/component" of components that depend on this one
+}
+
 export interface Component {
     id: string;
     label?: string;
@@ -72,6 +82,8 @@ export interface Component {
     buildPack?: string; // Component implemented language
     services: Services;
     connections: Connection[];
+    // In/out connections for the hover card (computed from the spec, incl. cross-project).
+    dependencies?: ComponentDependencies;
     disabled?: {
         status: boolean;
         reason?: string;
@@ -98,6 +110,9 @@ export interface Connection {
     tooltip?: string;
     observations?: Observations[];
     observationOnly?: boolean;
+    // When set, this connection node renders as an aggregated egress/ingress card
+    // listing these destination/source cells instead of a single icon + label.
+    destinations?: string[];
 }
 
 export enum ConnectionType {

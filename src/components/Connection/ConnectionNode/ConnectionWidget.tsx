@@ -20,7 +20,8 @@ import React, { useContext, useEffect, useState } from "react";
 import { DiagramEngine } from "@projectstorm/react-diagrams";
 import { ConnectionModel } from "./ConnectionModel";
 import { ConnectionHeadWidget } from "./ConnectionHead/ConnectionHead";
-import { ConnectionName, ConnectionNode } from "./styles";
+import { ConnectionName, ConnectionNode, EgressDot } from "./styles";
+import { ConnectionPortWidget } from "../ConnectionPort/ConnectionPortWidget";
 import { DiagramContext } from "../../DiagramContext/DiagramContext";
 import { ComponentLinkModel } from "../../Component/ComponentLink/ComponentLinkModel";
 
@@ -52,10 +53,23 @@ export function ConnectionWidget(props: ConnectionWidgetProps) {
         };
     }, [node]);
 
+    const isSelected = node.getID() === selectedNodeId || node.isNodeSelected(selectedLink, node.getID());
+    const destinations = node.connection.destinations;
+
+    if (destinations && destinations.length > 0) {
+        // Aggregated cross-cell egress: all egress converges to this single dot.
+        return (
+            <EgressDot>
+                <ConnectionPortWidget port={node.getPort(`left-${node.getID()}`)} engine={engine} />
+                <ConnectionPortWidget port={node.getPort(`right-${node.getID()}`)} engine={engine} />
+            </EgressDot>
+        );
+    }
+
     return (
         <ConnectionNode
             previewMode={previewMode}
-            isSelected={node.getID() === selectedNodeId || node.isNodeSelected(selectedLink, node.getID())}
+            isSelected={isSelected}
             isFocused={node.getID() === focusedNodeId}
             orientation={node.orientation}
         >

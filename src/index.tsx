@@ -83,6 +83,18 @@ export function specToModel(spec: CellSpec): Organization | Project {
         (p.components || []).forEach((c, ci) => resolver.set(`${p.name}/${c.name}`, { libId: `c${pi}_${ci}`, projId: `p${pi}` }))
     );
 
+    // Reverse map for the hover card: target "project/component" -> source "project/component"[]
+    // (who calls each component, in-project and cross-project).
+    const callers: Record<string, string[]> = {};
+    projectsIn.forEach((p) =>
+        (p.components || []).forEach((c) =>
+            (c.calls || []).forEach((call) => {
+                const targetKey = call.includes("/") ? call : `${p.name}/${call}`;
+                (callers[targetKey] = callers[targetKey] || []).push(`${p.name}/${c.name}`);
+            })
+        )
+    );
+
     const projects: Project[] = projectsIn.map((p, pi) => {
         const projId = `p${pi}`;
         const orgLinks: Record<string, true> = {};
@@ -93,7 +105,9 @@ export function specToModel(spec: CellSpec): Organization | Project {
             (c.calls || []).forEach((call) => {
                 const target = resolver.get(call.includes("/") ? call : `${p.name}/${call}`);
                 if (!target) return;
-                connections.push({ id: `${orgId}:${target.projId}:${target.libId}`, type: ConnectionType.HTTP, label: call.split("/").pop() });
+                // `call` is already "project/component" for cross-project calls (same-project
+                // calls have no slash), so the egress card shows which project each destination is in.
+                connections.push({ id: `${orgId}:${target.projId}:${target.libId}`, type: ConnectionType.HTTP, label: call });
                 if (target.projId !== projId) orgLinks[target.projId] = true; // inter-project link for the org view
             });
             // Platform-managed resources (on-platform) and third-party systems (off-platform).
@@ -125,6 +139,17 @@ export function specToModel(spec: CellSpec): Organization | Project {
                     },
                 },
                 connections,
+                dependencies: {
+                    out: [
+                        ...(c.calls || []).map((call) => ({ label: call, kind: "calls" as const })),
+                        ...(c.resources || []).map((res) => ({ label: res, kind: "uses" as const })),
+                        ...(c.external || []).map((ext) => ({ label: ext, kind: "external" as const })),
+                    ],
+                    in: (callers[`${p.name}/${c.name}`] || []).map((src) => {
+                        const [sp, sc] = src.split("/");
+                        return sp === p.name ? sc : src; // strip prefix for same-project callers
+                    }),
+                },
             };
         });
         const connections = Object.keys(orgLinks).map((tp) => ({
@@ -151,33 +176,70 @@ function OrgApp({ organization }: { organization: Organization }) {
         <div style={{ position: "absolute", inset: 0 }}>
             {project ? (
                 <>
-                    <button
-                        onClick={() => setProjectId(null)}
+                    <div
                         style={{
                             position: "absolute",
                             top: 16,
                             left: 16,
                             zIndex: 10,
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 8,
                             padding: "8px 14px",
-                            cursor: "pointer",
                             font: "14px/1 GilmerRegular, sans-serif",
                             border: "1px solid rgba(0,0,0,0.15)",
                             borderRadius: 8,
                             background: "#fff",
                             boxShadow: "0 1px 3px rgba(0,0,0,0.12)",
                         }}
+                        aria-label="breadcrumb"
                     >
-                        ← All projects
-                    </button>
+                        <button
+                            onClick={() => setProjectId(null)}
+                            style={{
+                                all: "unset",
+                                cursor: "pointer",
+                                color: "rgba(0,0,0,0.6)",
+                                font: "inherit",
+                            }}
+                            title="Back to all projects"
+                        >
+                            ← {organization.name}
+                        </button>
+                        <span style={{ color: "rgba(0,0,0,0.3)" }}>/</span>
+                        <span style={{ fontWeight: 600 }} aria-current="page">
+                            {project.name}
+                        </span>
+                    </div>
                     <CellDiagram project={project} />
                 </>
             ) : (
-                <CellDiagram
-                    organization={organization}
-                    onComponentDoubleClick={(id) => {
-                        if (organization.projects.some((p) => p.id === id)) setProjectId(id);
-                    }}
-                />
+                <>
+                    <div
+                        style={{
+                            position: "absolute",
+                            top: 16,
+                            left: 16,
+                            zIndex: 10,
+                            padding: "8px 14px",
+                            font: "14px/1 GilmerRegular, sans-serif",
+                            fontWeight: 600,
+                            border: "1px solid rgba(0,0,0,0.15)",
+                            borderRadius: 8,
+                            background: "#fff",
+                            boxShadow: "0 1px 3px rgba(0,0,0,0.12)",
+                        }}
+                        aria-label="breadcrumb"
+                    >
+                        {organization.name}
+                    </div>
+                    <CellDiagram
+                        organization={organization}
+                        onComponentDoubleClick={(id) => {
+                            if (organization.projects.some((p) => p.id === id)) setProjectId(id);
+                        }}
+                    />
+                </>
             )}
         </div>
     );

@@ -69,8 +69,38 @@ import { getEmptyNodeName } from "../components/Cell/cell-util";
 import { getExternalLinkName, getExternalNodeName } from "../components/External/external-node-util";
 import { DagreEngine } from "../resources/Dagre/DagreEngine";
 
+// Collapse every component's cross-cell (eastbound) calls into ONE shared aggregate
+// connection so the cell renders a single egress point + a card listing the destinations,
+// instead of one exit dot + node per call.
+function aggregateCrossCellEgress(project: Project): Project {
+    const destinations: string[] = [];
+    const seen = new Set<string>();
+    project.components?.forEach((c) =>
+        c.connections?.forEach((conn) => {
+            if (isExternalConnection(project.id, conn, true)) {
+                const label = conn.label || conn.id;
+                if (!seen.has(label)) {
+                    seen.add(label);
+                    destinations.push(label);
+                }
+            }
+        })
+    );
+    if (destinations.length === 0) return project;
+    const aggregate: Connection = { id: `org:EGRESS:${project.id}`, type: ConnectionType.HTTP, destinations };
+    const components = project.components.map((c) => {
+        const connections = (c.connections || []).filter((conn) => !isExternalConnection(project.id, conn, true));
+        if ((c.connections || []).some((conn) => isExternalConnection(project.id, conn, true))) {
+            connections.push(aggregate);
+        }
+        return { ...c, connections };
+    });
+    return { ...project, components };
+}
+
 // Project diagram engine utils
-export function getDiagramDataFromProject(project: Project): ProjectDiagramData {
+export function getDiagramDataFromProject(projectInput: Project): ProjectDiagramData {
+    const project = aggregateCrossCellEgress(projectInput);
     const componentNodes: Map<string, CommonModel> = generateComponentNodes(project);
     const connectorNodes: Map<string, ConnectionModel> = generateConnectorNodes(project);
     const connectionNodes: Map<string, ConnectionModel> = generateConnectionNodes(project);
