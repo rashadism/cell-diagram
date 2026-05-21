@@ -131,7 +131,7 @@ export function getComponentDiagramWidth(models: ProjectDiagramData): number {
             ranksep: 200,
             edgesep: 100,
             nodesep: 150,
-            ranker: "tight-tree",
+            ranker: "network-simplex",
         },
     });
     dagreEngine.redistribute(tempModel);
@@ -508,11 +508,14 @@ function generateComponentLinks(project: Project, nodes: Map<string, CommonModel
             if (isConnectorConnection(connection) && connection.onPlatform) {
                 const associatedComponent = nodes.get(getConnectionNameById(connection.id)) as ConnectionModel;
                 if (callingComponent && associatedComponent) {
+                    // On-platform resources lay out as a sink to the right of their consumers,
+                    // so route right→left (like component-to-component calls) instead of bottom→top —
+                    // bottom→top loops badly once a resource has more than one consumer.
                     const sourcePort: ComponentPortModel | null = callingComponent.getPort(
-                        `bottom-${callingComponent.getID()}`
+                        `right-${callingComponent.getID()}`
                     );
                     const targetPort: ConnectionPortModel | null = associatedComponent.getPort(
-                        `top-${associatedComponent.getID()}`
+                        `left-${associatedComponent.getID()}`
                     );
 
                     if (sourcePort && targetPort) {

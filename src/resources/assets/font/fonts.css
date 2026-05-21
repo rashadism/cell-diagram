@@ -16,38 +16,38 @@
  * under the License.
  */
 
+/*
+ * The "Gilmer*" families are kept as aliases so existing references across the
+ * codebase keep working, but they now resolve to local system fonts via local()
+ * only -- no font files are bundled or shipped. The local() list spans macOS,
+ * Windows and Linux so a sans-serif face is found on any platform; if none
+ * matches the text falls through to the element's sans-serif fallback.
+ */
+
 @font-face {
     font-family: 'GilmerRegular';
-    src: url('Gilmer-Regular.eot');
-    src:
-            url('Gilmer-Regular.eot?#iefix') format('embedded-opentype'),
-            url('Gilmer-Regular.woff2') format('woff2'),
-            url('Gilmer-Regular.woff') format('woff'),
-            url('Gilmer-Regular.ttf') format('truetype');
-    font-weight: normal;
+    src: local('Helvetica Neue'), local('Helvetica'), local('Segoe UI'),
+         local('Roboto'), local('Arial'), local('Liberation Sans'),
+         local('DejaVu Sans');
+    font-weight: 400;
     font-style: normal;
 }
 
 @font-face {
     font-family: 'GilmerMedium';
-    src: url('Gilmer-Medium.eot');
-    src:
-            url('Gilmer-Medium.eot?#iefix') format('embedded-opentype'),
-            url('Gilmer-Medium.woff2') format('woff2'),
-            url('Gilmer-Medium.woff') format('woff'),
-            url('Gilmer-Medium.ttf') format('truetype');
-    font-weight: 600px;
+    src: local('Helvetica Neue Medium'), local('Segoe UI Semibold'),
+         local('Roboto Medium'), local('Helvetica Neue'), local('Segoe UI'),
+         local('Arial'), local('Liberation Sans'), local('DejaVu Sans');
+    font-weight: 500;
     font-style: normal;
 }
 
 @font-face {
     font-family: 'GilmerBold';
-    src: url('Gilmer-Bold.eot');
-    src:
-            url('Gilmer-Bold.eot?#iefix') format('embedded-opentype'),
-            url('Gilmer-Bold.woff2') format('woff2'),
-            url('Gilmer-Bold.woff') format('woff'),
-            url('Gilmer-Bold.ttf') format('truetype');
-    font-weight: 700px;
+    src: local('Helvetica Neue Bold'), local('Segoe UI Bold'),
+         local('Roboto Bold'), local('Arial Bold'), local('Helvetica Neue'),
+         local('Segoe UI'), local('Arial'), local('Liberation Sans'),
+         local('DejaVu Sans');
+    font-weight: 700;
     font-style: normal;
 }
