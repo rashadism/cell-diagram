@@ -121,3 +121,22 @@ export const PortsContainer = styled.div`
     display: flex;
     justify-content: center;
 `;
+
+// Cross-cell ingress indicator: a small visible dot anchored to the west side of the
+// component head, lit when the component is called by any cross-project source.
+// The existing component hover card (depCard) covers the detail (`used by`); this
+// dot is the discoverable visual signal that there's cross-cell inbound traffic.
+export const IngressBadge = styled.div`
+    position: absolute;
+    left: -6px;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background-color: ${({ theme }) => theme.colors.PRIMARY};
+    border: 1.5px solid ${({ theme }) => theme.colors.SURFACE};
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+    pointer-events: none;
+    z-index: 5;
+`;
