@@ -445,10 +445,18 @@ function getCellGateways(project: Project): Gateways {
                 if (service.deploymentMetadata?.gateways.internet.isExposed) {
                     gateways.internet = true;
                 }
-                if (service.deploymentMetadata?.gateways.intranet.isExposed) {
-                    gateways.intranet = true;
-                }
+                // gateways.intranet is NOT set from expose alone — it fires only when
+                // there's actual cross-cell inbound traffic (see the deps.in check below).
+                // A component marked expose: namespace/internal but never called cross-cell
+                // doesn't render a westbound gateway — the visual reflects real traffic, not
+                // advertised intent.
             }
+        }
+        // Cross-cell inbound implies the receiver is reached from another Project,
+        // i.e. the westbound (intranet) gateway is in use — even if the spec didn't
+        // mark expose explicitly.
+        if ((component.dependencies?.in || []).some((s) => s.includes("/"))) {
+            gateways.intranet = true;
         }
     });
 
@@ -684,43 +692,28 @@ function generateCellLinks(
                 }
             }
         }
-        // intranet/org exposed services links
+        // cross-cell inbound — components called from another Project get a link
+        // from the westbound gateway to their left port, regardless of whether the
+        // spec set expose explicitly. Mirrors the intranet-exposed link above.
         if (targetComponent) {
-            let isExposed = false;
-            let tooltip = "";
-            const observations: Observations[] = [];
-            let observationOnly = false;
-            for (const serviceId in component.services) {
-                if (Object.prototype.hasOwnProperty.call(component.services, serviceId)) {
-                    const service = component.services[serviceId];
-                    isExposed = isExposed || service.deploymentMetadata?.gateways.intranet.isExposed;
-                    // capture service exposed link observations
-                    if (service.deploymentMetadata?.gateways.intranet.observations?.length > 0) {
-                        observations.push(...service.deploymentMetadata?.gateways.intranet.observations);
-                    }
-                    observationOnly = observationOnly || service.deploymentMetadata?.gateways.intranet.observationOnly;
-                    tooltip = service.deploymentMetadata?.gateways.intranet.tooltip;
-                }
-            }
-            const northBoundEmptyNode = emptyNodes.get(getEmptyNodeName(CellBounds.WestBound));
-            if (isExposed && northBoundEmptyNode) {
-                const sourcePort: CellPortModel | null = northBoundEmptyNode.getPort(
-                    getNodePortId(northBoundEmptyNode.getID(), PortModelAlignment.RIGHT)
-                );
-                const targetPort: ComponentPortModel | null = targetComponent.getPort(
-                    `left-${targetComponent.getID()}`
-                );
-                if (sourcePort && targetPort) {
-                    const linkId = getCellLinkName(sourcePort.getID(), targetPort.getID());
-                    const link: CellLinkModel = new CellLinkModel(linkId);
-                    links.set(linkId, createLinks(sourcePort, targetPort, link) as CellLinkModel);
-                    link.setSourceNode(northBoundEmptyNode.getID());
-                    link.setTargetNode(targetComponent.getID());
-                    if (observations.length > 0) {
-                        link.setObservations(observations, observationOnly);
-                    }
-                    if (tooltip) {
-                        link.setTooltip(tooltip);
+            const hasCrossCellInbound = (component.dependencies?.in || []).some((s) => s.includes("/"));
+            if (hasCrossCellInbound) {
+                const westBoundEmptyNode = emptyNodes.get(getEmptyNodeName(CellBounds.WestBound));
+                if (westBoundEmptyNode) {
+                    const sourcePort: CellPortModel | null = westBoundEmptyNode.getPort(
+                        getNodePortId(westBoundEmptyNode.getID(), PortModelAlignment.RIGHT)
+                    );
+                    const targetPort: ComponentPortModel | null = targetComponent.getPort(
+                        `left-${targetComponent.getID()}`
+                    );
+                    if (sourcePort && targetPort) {
+                        const linkId = getCellLinkName(sourcePort.getID(), targetPort.getID());
+                        if (!links.has(linkId)) {
+                            const link: CellLinkModel = new CellLinkModel(linkId);
+                            links.set(linkId, createLinks(sourcePort, targetPort, link) as CellLinkModel);
+                            link.setSourceNode(westBoundEmptyNode.getID());
+                            link.setTargetNode(targetComponent.getID());
+                        }
                     }
                 }
             }

@@ -21,7 +21,7 @@ import { DiagramEngine, LinkModel, PortModel, PortModelAlignment } from "@projec
 import { ComponentModel } from "./ComponentModel";
 import { ComponentLinkModel } from "../ComponentLink/ComponentLinkModel";
 import { ComponentHeadWidget } from "./ComponentHead/ComponentHead";
-import { ComponentName, ComponentNode, IngressBadge, PortsContainer } from "./styles";
+import { ComponentName, ComponentNode, PortsContainer } from "./styles";
 import { DiagramContext } from "../../DiagramContext/DiagramContext";
 import { ComponentPortWidget } from "../ComponentPort/ComponentPortWidget";
 import { Tooltip } from "@mui/material";
@@ -122,9 +122,6 @@ export function ComponentWidget(props: ComponentWidgetProps) {
 
     const deps = node.component.dependencies;
     const hasDeps = !previewMode && deps && (deps.out.length > 0 || deps.in.length > 0);
-    // Cross-cell inbound: callers from a different project (the spec keeps the
-    // "project/component" prefix only for those; same-project callers are bare names).
-    const hasCrossCellInbound = !previewMode && !!deps?.in?.some((s) => s.includes("/"));
     const eyebrow: React.CSSProperties = { opacity: 0.55, fontSize: 9, textTransform: "uppercase", letterSpacing: "0.07em", marginTop: 5 };
     const depCard = (
         <div style={{ fontSize: 11.5, lineHeight: 1.5 }}>
@@ -166,7 +163,6 @@ export function ComponentWidget(props: ComponentWidgetProps) {
                         menuItems={componentMenu}
                         onFocusOut={handleMouseLeave}
                     />
-                    {hasCrossCellInbound && <IngressBadge />}
                 </span>
             </Tooltip>
             <Tooltip title={displayName} placement="bottom" enterNextDelay={500} arrow>
